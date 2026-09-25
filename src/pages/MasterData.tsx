@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Plus, Search, Pencil, Trash2, X, Check, Loader2 } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Plus, Search, Pencil, Trash2, X, Check, Loader2, Upload, FileSpreadsheet, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { useWarehouseStore } from '@/store/useWarehouseStore';
 import { FormField } from '@/components/FormField';
 import { Alert } from '@/components/FormField';
@@ -10,7 +11,7 @@ const EMPTY: Omit<MD, 'id' | 'created_at'> = {
 };
 
 export default function MasterData() {
-  const { masterData, addMasterData, updateMasterData, deleteMasterData } = useWarehouseStore();
+  const { masterData, addMasterData, bulkAddMasterData, updateMasterData, deleteMasterData } = useWarehouseStore();
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<MD | null>(null);
@@ -18,6 +19,10 @@ export default function MasterData() {
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploadPreview, setUploadPreview] = useState<Omit<MD, 'id' | 'created_at'>[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filtered = masterData.filter((r) =>
     [r.barcode, r.product_name, r.product_code, r.keeping_no].some((v) =>
@@ -71,6 +76,102 @@ export default function MasterData() {
   const f = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((p) => ({ ...p, [key]: key === 'stock' ? Number(e.target.value) : e.target.value }));
 
+  const COLUMN_MAP: Record<string, keyof Omit<MD, 'id' | 'created_at'>> = {
+    barcode: 'barcode',
+    'Barcode': 'barcode',
+    'BARCODE': 'barcode',
+    product_code: 'product_code',
+    'Product Code': 'product_code',
+    'Kode Produk': 'product_code',
+    product_name: 'product_name',
+    'Product Name': 'product_name',
+    'Nama Produk': 'product_name',
+    'Nama': 'product_name',
+    thickness: 'thickness',
+    'Thickness': 'thickness',
+    'Tebal': 'thickness',
+    keeping_no: 'keeping_no',
+    'Keeping No': 'keeping_no',
+    'Keeping Number': 'keeping_no',
+    stock: 'stock',
+    'Stock': 'stock',
+    'Stok': 'stock',
+    'Qty': 'stock',
+  };
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setAlert(null);
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = new Uint8Array(ev.target?.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows: Record<string, any>[] = XLSX.utils.sheet_to_json(sheet);
+
+        const mapped: Omit<MD, 'id' | 'created_at'>[] = rows.map((row) => {
+          const obj: any = { barcode: '', product_code: '', product_name: '', thickness: '', keeping_no: '', stock: 0 };
+          for (const [excelCol, val] of Object.entries(row)) {
+            const dbCol = COLUMN_MAP[excelCol.trim()];
+            if (dbCol) {
+              if (dbCol === 'stock') {
+                obj[dbCol] = Number(val) || 0;
+              } else {
+                obj[dbCol] = String(val ?? '').trim();
+              }
+            }
+          }
+          return obj;
+        }).filter((r) => r.barcode);
+
+        if (mapped.length === 0) {
+          setAlert({ type: 'error', msg: 'Tidak ada baris valid. Pastikan ada kolom "barcode" di file Excel.' });
+          setUploading(false);
+          return;
+        }
+
+        setUploadPreview(mapped);
+        setShowUpload(true);
+        setUploading(false);
+      } catch {
+        setAlert({ type: 'error', msg: 'Gagal membaca file Excel. Pastikan format .xlsx atau .xls.' });
+        setUploading(false);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
+  }
+
+  async function handleUploadConfirm() {
+    setUploading(true);
+    try {
+      await bulkAddMasterData(uploadPreview);
+      setAlert({ type: 'success', msg: `${uploadPreview.length} produk berhasil diupload ke database!` });
+      setShowUpload(false);
+      setUploadPreview([]);
+    } catch (e: any) {
+      setAlert({ type: 'error', msg: e.message });
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function downloadTemplate() {
+    const sample = [
+      { barcode: 'KCC001', product_code: 'P-001', product_name: 'Float Glass 5mm Clear', thickness: '5mm', keeping_no: 'KP-001', stock: 100 },
+      { barcode: 'KCC002', product_code: 'P-002', product_name: 'Float Glass 6mm Bronze', thickness: '6mm', keeping_no: 'KP-002', stock: 50 },
+    ];
+    const ws = XLSX.utils.json_to_sheet(sample);
+    ws['!cols'] = [{ wch: 12 }, { wch: 12 }, { wch: 28 }, { wch: 10 }, { wch: 12 }, { wch: 8 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Master Data');
+    XLSX.writeFile(wb, 'template_master_data.xlsx');
+  }
+
   return (
     <div className="space-y-4 animate-fade-in">
       {alert && (
@@ -88,10 +189,81 @@ export default function MasterData() {
             className="glass-input pl-10"
           />
         </div>
-        <button onClick={openAdd} className="glass-btn-primary flex items-center gap-2 whitespace-nowrap">
-          <Plus size={16} /> Tambah Data
-        </button>
+        <div className="flex gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="glass-btn-secondary flex items-center gap-2 whitespace-nowrap"
+          >
+            {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+            {uploading ? 'Memproses...' : 'Upload Excel'}
+          </button>
+          <button onClick={downloadTemplate} className="glass-btn-secondary flex items-center gap-2 whitespace-nowrap" title="Download template Excel kosong">
+            <Download size={16} /> Template
+          </button>
+          <button onClick={openAdd} className="glass-btn-primary flex items-center gap-2 whitespace-nowrap">
+            <Plus size={16} /> Tambah Data
+          </button>
+        </div>
       </div>
+
+      {/* Upload Preview Modal */}
+      {showUpload && (
+        <div className="form-section animate-scale-in">
+          <div className="flex items-center justify-between">
+            <h3 className="text-slate-800 font-bold text-base flex items-center gap-2">
+              <FileSpreadsheet size={18} className="text-emerald-600" />
+              Preview Upload Excel ({uploadPreview.length} baris)
+            </h3>
+            <button onClick={() => { setShowUpload(false); setUploadPreview([]); }} className="text-slate-500 hover:text-slate-700">
+              <X size={18} />
+            </button>
+          </div>
+          <div className="overflow-x-auto max-h-64 rounded-xl border border-white/30">
+            <table className="w-full glass-table min-w-[700px]">
+              <thead>
+                <tr>
+                  <th>Barcode</th>
+                  <th>Kode</th>
+                  <th>Nama Produk</th>
+                  <th>Thickness</th>
+                  <th>Keeping No</th>
+                  <th>Stok</th>
+                </tr>
+              </thead>
+              <tbody>
+                {uploadPreview.slice(0, 50).map((row, i) => (
+                  <tr key={i}>
+                    <td className="font-mono text-xs font-semibold">{row.barcode}</td>
+                    <td className="text-xs">{row.product_code || '-'}</td>
+                    <td>{row.product_name || '-'}</td>
+                    <td>{row.thickness || '-'}</td>
+                    <td>{row.keeping_no || '-'}</td>
+                    <td>{row.stock ?? 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {uploadPreview.length > 50 && (
+            <p className="text-slate-500 text-xs">Menampilkan 50 dari {uploadPreview.length} baris.</p>
+          )}
+          <div className="flex gap-3 pt-2">
+            <button onClick={handleUploadConfirm} disabled={uploading} className="glass-btn-primary flex items-center gap-2">
+              {uploading ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
+              {uploading ? 'Mengupload...' : `Upload ${uploadPreview.length} Produk`}
+            </button>
+            <button onClick={() => { setShowUpload(false); setUploadPreview([]); }} className="glass-btn-secondary">Batal</button>
+          </div>
+        </div>
+      )}
 
       {/* Add / Edit Form */}
       {showForm && (

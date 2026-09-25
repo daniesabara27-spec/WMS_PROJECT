@@ -35,14 +35,19 @@ export function BarcodeField({ value, onChange, onLookup, autoFilled }: BarcodeF
         <input
           type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value.toUpperCase())}
+          onChange={(e) => {
+            const val = e.target.value.toUpperCase();
+            onChange(val);
+            onLookup(val);
+          }}
           onBlur={(e) => onLookup(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') onLookup(value); }}
-          placeholder="Scan / ketik barcode lalu tekan Enter..."
+          placeholder="Scan / ketik barcode..."
           className="glass-input pr-24"
+          autoComplete="off"
         />
         {autoFilled && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-600 font-medium bg-emerald-50/80 px-2 py-0.5 rounded-full">
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-600 font-medium bg-emerald-50/80 px-2 py-0.5 rounded-full whitespace-nowrap">
             Auto-filled
           </span>
         )}

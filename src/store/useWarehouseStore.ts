@@ -18,6 +18,7 @@ interface WarehouseStore {
   fetchMasterData: () => Promise<void>;
   lookupBarcode: (barcode: string) => BarcodeCache[string] | null;
   addMasterData: (item: Omit<MasterData, 'id' | 'created_at'>) => Promise<void>;
+  bulkAddMasterData: (items: Omit<MasterData, 'id' | 'created_at'>[]) => Promise<void>;
   updateMasterData: (id: string, item: Partial<MasterData>) => Promise<void>;
   deleteMasterData: (id: string) => Promise<void>;
 }
@@ -59,6 +60,12 @@ export const useWarehouseStore = create<WarehouseStore>((set, get) => ({
 
   addMasterData: async (item) => {
     const { error } = await supabase.from('master_data').insert(item);
+    if (error) throw new Error(error.message);
+    await get().fetchMasterData();
+  },
+
+  bulkAddMasterData: async (items) => {
+    const { error } = await supabase.from('master_data').insert(items);
     if (error) throw new Error(error.message);
     await get().fetchMasterData();
   },
