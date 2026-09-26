@@ -1,4 +1,4 @@
-import { X, LayoutDashboard, Database, Package, ArrowDownToLine, ArrowUpFromLine, Droplets, ClipboardCheck, Download, ChevronRight } from 'lucide-react';
+import { X, LayoutDashboard, Database, Package, ArrowDownToLine, ArrowUpFromLine, Droplets, ClipboardCheck, Download, ChevronRight, ClipboardList, Timer, AlertTriangle } from 'lucide-react';
 
 export type Page =
   | 'dashboard'
@@ -8,6 +8,9 @@ export type Page =
   | 'outbound'
   | 'moisture'
   | 'inspeksi'
+  | 'stock-opname'
+  | 'cycle-time'
+  | 'sor-incident'
   | 'tarik-data';
 
 interface NavItem {
@@ -25,6 +28,9 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'outbound', label: 'Outbound', icon: <ArrowUpFromLine size={18} />, group: 'Operasional' },
   { id: 'moisture', label: 'Moisture Container', icon: <Droplets size={18} />, group: 'Quality' },
   { id: 'inspeksi', label: 'Inspeksi Pengiriman', icon: <ClipboardCheck size={18} />, group: 'Quality' },
+  { id: 'sor-incident', label: 'SOR / Insiden', icon: <AlertTriangle size={18} />, group: 'Quality' },
+  { id: 'stock-opname', label: 'Stock Opname', icon: <ClipboardList size={18} />, group: 'Audit & Tracking' },
+  { id: 'cycle-time', label: 'Cycle Time', icon: <Timer size={18} />, group: 'Audit & Tracking' },
   { id: 'tarik-data', label: 'Tarik Data', icon: <Download size={18} />, group: 'Laporan' },
 ];
 
@@ -111,7 +117,7 @@ export default function Sidebar({ currentPage, onNavigate, isOpen, onClose }: Si
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-white/10">
-          <p className="text-white/30 text-xs text-center">v2.0 — Sept 2026</p>
+          <p className="text-white/30 text-xs text-center">v2.1 — Sept 2026</p>
         </div>
       </aside>
     </>

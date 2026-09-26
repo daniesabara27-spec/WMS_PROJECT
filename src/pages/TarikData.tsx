@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
 import { FormField, Alert } from '@/components/FormField';
 
-type Category = 'packing' | 'inbound' | 'outbound' | 'moisture_container' | 'inspeksi_pengiriman' | 'all';
+type Category = 'packing' | 'inbound' | 'outbound' | 'moisture_container' | 'inspeksi_pengiriman' | 'stock_opname' | 'cycle_time' | 'sor_incident' | 'all';
 
 const CATEGORIES: { value: Category; label: string }[] = [
   { value: 'all', label: 'Semua Kategori' },
@@ -13,6 +13,9 @@ const CATEGORIES: { value: Category; label: string }[] = [
   { value: 'outbound', label: 'Outbound' },
   { value: 'moisture_container', label: 'Moisture Container' },
   { value: 'inspeksi_pengiriman', label: 'Inspeksi Pengiriman' },
+  { value: 'stock_opname', label: 'Stock Opname' },
+  { value: 'cycle_time', label: 'Cycle Time' },
+  { value: 'sor_incident', label: 'SOR Incident' },
 ];
 
 function today() {
@@ -32,6 +35,9 @@ function formatSheetName(table: string): string {
     outbound: 'Outbound',
     moisture_container: 'Moisture Container',
     inspeksi_pengiriman: 'Inspeksi',
+    stock_opname: 'Stock Opname',
+    cycle_time: 'Cycle Time',
+    sor_incident: 'SOR Incident',
   };
   return map[table] ?? table;
 }
@@ -57,7 +63,7 @@ export default function TarikData() {
   const [preview, setPreview] = useState<{ table: string; count: number }[]>([]);
 
   const TABLES: string[] = category === 'all'
-    ? ['packing', 'inbound', 'outbound', 'moisture_container', 'inspeksi_pengiriman']
+    ? ['packing', 'inbound', 'outbound', 'moisture_container', 'inspeksi_pengiriman', 'stock_opname', 'cycle_time', 'sor_incident']
     : [category];
 
   async function handlePreview() {

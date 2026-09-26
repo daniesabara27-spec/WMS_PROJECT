@@ -33,6 +33,21 @@ export interface Database {
         Insert: Omit<InspeksiPengiriman, 'id' | 'created_at'>;
         Update: Partial<Omit<InspeksiPengiriman, 'id'>>;
       };
+      stock_opname: {
+        Row: StockOpname;
+        Insert: Omit<StockOpname, 'id' | 'created_at'>;
+        Update: Partial<Omit<StockOpname, 'id'>>;
+      };
+      cycle_time: {
+        Row: CycleTime;
+        Insert: Omit<CycleTime, 'id' | 'created_at'>;
+        Update: Partial<Omit<CycleTime, 'id'>>;
+      };
+      sor_incident: {
+        Row: SorIncident;
+        Insert: Omit<SorIncident, 'id' | 'created_at'>;
+        Update: Partial<Omit<SorIncident, 'id'>>;
+      };
     };
   };
 }
@@ -119,4 +134,41 @@ export interface InspeksiPengiriman {
   chk_silica: boolean | null;
   chk_stopper: boolean | null;
   photo_url: string | null;
+}
+
+export interface StockOpname {
+  id: string;
+  created_at: string;
+  shift: string | null;
+  pic: string | null;
+  barcode: string | null;
+  description: string | null;
+  thickness: string | null;
+  qty_system: number | null;
+  qty_physical: number | null;
+  discrepancy: number | null;
+  status: string | null;
+}
+
+export interface CycleTime {
+  id: string;
+  created_at: string;
+  shift: string | null;
+  container_no: string;
+  process_stage: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  total_duration_minutes: number | null;
+  pic: string | null;
+}
+
+export interface SorIncident {
+  id: string;
+  created_at: string;
+  shift: string | null;
+  issue_category: string | null;
+  description_id: string | null;
+  description_en: string | null;
+  corrective_action: string | null;
+  pic: string | null;
 }

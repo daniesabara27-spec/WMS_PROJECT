@@ -9,6 +9,9 @@ const PAGE_TITLES: Record<Page, string> = {
   outbound: 'Form Outbound',
   moisture: 'Moisture Container',
   inspeksi: 'Inspeksi Pengiriman',
+  'stock-opname': 'Stock Opname & Rekonsiliasi',
+  'cycle-time': 'Cycle Time Tracking',
+  'sor-incident': 'SOR / Insiden',
   'tarik-data': 'Tarik Data / Export',
 };
 

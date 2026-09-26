@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Package, ArrowDownToLine, ArrowUpFromLine, Database, TrendingUp, Activity, Droplets, ClipboardCheck } from 'lucide-react';
+import { Package, ArrowDownToLine, ArrowUpFromLine, Database, TrendingUp, Activity, Droplets, ClipboardCheck, ClipboardList, Timer, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useWarehouseStore } from '@/store/useWarehouseStore';
 
@@ -10,6 +10,9 @@ interface Stats {
   outbound: number;
   moisture: number;
   inspeksi: number;
+  stockOpname: number;
+  cycleTime: number;
+  sorIncident: number;
 }
 
 interface RecentItem {
@@ -22,18 +25,21 @@ interface RecentItem {
 
 export default function Dashboard() {
   const { masterData } = useWarehouseStore();
-  const [stats, setStats] = useState<Stats>({ masterData: 0, packing: 0, inbound: 0, outbound: 0, moisture: 0, inspeksi: 0 });
+  const [stats, setStats] = useState<Stats>({ masterData: 0, packing: 0, inbound: 0, outbound: 0, moisture: 0, inspeksi: 0, stockOpname: 0, cycleTime: 0, sorIncident: 0 });
   const [recent, setRecent] = useState<RecentItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadStats() {
-      const [pack, inb, out, moist, insp] = await Promise.all([
+      const [pack, inb, out, moist, insp, opnCount, cycCount, sorCount] = await Promise.all([
         supabase.from('packing').select('id, barcode, pic, created_at').order('created_at', { ascending: false }).limit(3),
         supabase.from('inbound').select('id, barcode, pic, created_at').order('created_at', { ascending: false }).limit(3),
         supabase.from('outbound').select('id, barcode, pic, created_at').order('created_at', { ascending: false }).limit(3),
-        supabase.from('moisture_container').select('count').single(),
-        supabase.from('inspeksi_pengiriman').select('count').single(),
+        supabase.from('moisture_container').select('*', { count: 'exact', head: true }),
+        supabase.from('inspeksi_pengiriman').select('*', { count: 'exact', head: true }),
+        supabase.from('stock_opname').select('*', { count: 'exact', head: true }),
+        supabase.from('cycle_time').select('*', { count: 'exact', head: true }),
+        supabase.from('sor_incident').select('*', { count: 'exact', head: true }),
       ]);
 
       const [packCount, inbCount, outCount] = await Promise.all([
@@ -47,8 +53,11 @@ export default function Dashboard() {
         packing: packCount.count ?? 0,
         inbound: inbCount.count ?? 0,
         outbound: outCount.count ?? 0,
-        moisture: (moist.data as any)?.count ?? 0,
-        inspeksi: (insp.data as any)?.count ?? 0,
+        moisture: moist.count ?? 0,
+        inspeksi: insp.count ?? 0,
+        stockOpname: opnCount.count ?? 0,
+        cycleTime: cycCount.count ?? 0,
+        sorIncident: sorCount.count ?? 0,
       });
 
       const recentItems: RecentItem[] = [
@@ -70,6 +79,9 @@ export default function Dashboard() {
     { label: 'Total Outbound', value: stats.outbound, icon: <ArrowUpFromLine size={22} />, color: 'from-amber-400/30 to-amber-600/30', iconColor: 'text-amber-300' },
     { label: 'Moisture Records', value: stats.moisture, icon: <Droplets size={22} />, color: 'from-cyan-400/30 to-cyan-600/30', iconColor: 'text-cyan-300' },
     { label: 'Inspeksi Records', value: stats.inspeksi, icon: <ClipboardCheck size={22} />, color: 'from-rose-400/30 to-rose-600/30', iconColor: 'text-rose-300' },
+    { label: 'Stock Opname', value: stats.stockOpname, icon: <ClipboardList size={22} />, color: 'from-teal-400/30 to-teal-600/30', iconColor: 'text-teal-300' },
+    { label: 'Cycle Time', value: stats.cycleTime, icon: <Timer size={22} />, color: 'from-indigo-400/30 to-indigo-600/30', iconColor: 'text-indigo-300' },
+    { label: 'SOR Incident', value: stats.sorIncident, icon: <AlertTriangle size={22} />, color: 'from-orange-400/30 to-orange-600/30', iconColor: 'text-orange-300' },
   ];
 
   const typeColor: Record<string, string> = {

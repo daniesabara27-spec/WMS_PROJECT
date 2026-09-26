@@ -8,6 +8,9 @@ import Inbound from '@/pages/Inbound';
 import Outbound from '@/pages/Outbound';
 import MoistureContainer from '@/pages/MoistureContainer';
 import InspeksiPengiriman from '@/pages/InspeksiPengiriman';
+import StockOpname from '@/pages/StockOpname';
+import CycleTime from '@/pages/CycleTime';
+import SORIncident from '@/pages/SORIncident';
 import TarikData from '@/pages/TarikData';
 import { useWarehouseStore } from '@/store/useWarehouseStore';
 
@@ -20,6 +23,9 @@ function PageContent({ page }: { page: Page }) {
     case 'outbound': return <Outbound />;
     case 'moisture': return <MoistureContainer />;
     case 'inspeksi': return <InspeksiPengiriman />;
+    case 'stock-opname': return <StockOpname />;
+    case 'cycle-time': return <CycleTime />;
+    case 'sor-incident': return <SORIncident />;
     case 'tarik-data': return <TarikData />;
     default: return <Dashboard />;
   }
